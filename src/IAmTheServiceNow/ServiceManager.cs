@@ -33,18 +33,54 @@ public class ServiceManager : BackgroundService
         };
         process.OutputDataReceived += OnOutputDataReceived;
         process.ErrorDataReceived += OnErrorDataReceived;
-        
-        process.Start();
-        
-        process.BeginErrorReadLine();
-        process.BeginOutputReadLine();
-        
-        while (stoppingToken.IsCancellationRequested is false)
+
+        try
         {
-            await Task.Delay(1000, stoppingToken);
-            
-            // TODO: handle restarts and checks
+            process.Start();
+
+            if (process.HasExited)
+            {
+                _logger.LogError("Process failed to start. Exit Code: {ExitCode}", process.ExitCode);
+
+                var output = await process.StandardOutput.ReadToEndAsync(stoppingToken);
+                _serviceLogger.LogInformation(output);
+
+                var error = await process.StandardError.ReadToEndAsync(stoppingToken);
+                _serviceLogger.LogError(error);
+            }
+
+            process.BeginErrorReadLine();
+            process.BeginOutputReadLine();
+
+            // TODO: Get all child processes and put add to job
+
+            while (stoppingToken.IsCancellationRequested is false)
+            {
+                await Task.Delay(1000, stoppingToken);
+
+                // TODO: handle restarts and checks
+            }
+
+            KillProcess(process);
         }
+        catch (TaskCanceledException e)
+        {
+            _logger.LogWarning(e, "Service requested to stop.");
+            KillProcess(process);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Service encountered an error.");
+            throw;
+        }
+    }
+
+    private void KillProcess(Process process)
+    {
+        _logger.LogDebug("Sending kill command...");
+        process.Kill();
+        process.WaitForExit();
+        _logger.LogInformation("Service stopped.");
     }
 
     private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)
