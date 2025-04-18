@@ -8,9 +8,27 @@ builder.Services.AddSerilog((serviceProvider, loggerConfiguration) =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
+    var logsDirectory = @"logs";
+    
     loggerConfiguration.ReadFrom.Configuration(configuration);
     loggerConfiguration.WriteTo.Console();
-    loggerConfiguration.WriteTo.File(@"logs.txt");
+    loggerConfiguration.WriteTo.File(Path.Combine(logsDirectory, "logs.txt"));
+    
+    loggerConfiguration.WriteTo.Conditional(
+        (logEvent) => logEvent.IsServiceManagerLogEvent(Serilog.Events.LogEventLevel.Information),
+        sink =>
+        {
+            sink.File(Path.Combine(logsDirectory, "output.txt"),
+                outputTemplate: Constants.LogFormat);
+        });
+    
+    loggerConfiguration.WriteTo.Conditional(
+        (logEvent) => logEvent.IsServiceManagerLogEvent(Serilog.Events.LogEventLevel.Error),
+        sink =>
+        {
+            sink.File(Path.Combine(logsDirectory, "error.txt"),
+                outputTemplate: Constants.LogFormat);
+        });
 });
 
 // DEBUG

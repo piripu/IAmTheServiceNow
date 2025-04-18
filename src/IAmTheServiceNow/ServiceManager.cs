@@ -36,6 +36,8 @@ public class ServiceManager : BackgroundService
         
         process.Start();
         
+        process.BeginErrorReadLine();
+        process.BeginOutputReadLine();
         
         while (stoppingToken.IsCancellationRequested is false)
         {
