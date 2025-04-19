@@ -12,7 +12,13 @@ builder.Services.AddSerilog((serviceProvider, loggerConfiguration) =>
     
     loggerConfiguration.ReadFrom.Configuration(configuration);
     loggerConfiguration.WriteTo.Console();
-    loggerConfiguration.WriteTo.File(Path.Combine(logsDirectory, "logs.txt"));
+    
+    loggerConfiguration.WriteTo.Conditional(
+        (logEvent) => logEvent.IsServiceManagerLogEvent() is false,
+        sink =>
+        {
+            sink.File(Path.Combine(logsDirectory, "logs.txt"));
+        });
     
     loggerConfiguration.WriteTo.Conditional(
         (logEvent) => logEvent.IsServiceManagerLogEvent(Serilog.Events.LogEventLevel.Information),
