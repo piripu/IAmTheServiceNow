@@ -1,8 +1,8 @@
 using Serilog.Events;
 
-namespace IAmTheServiceNow;
+namespace IAmTheServiceNow.Extensions;
 
-internal static class Extensions
+internal static class LogEventExtensions
 {
     private const string SourceContext = "SourceContext";
     
